@@ -22,7 +22,7 @@ class SubtitleDownload:
     login_token = None
     server = None
     moviefiles = []
-    movie_exts = (".avi", ".mkv", ".mp4")
+    movie_exts = (".avi", ".mkv", ".mp4", ".wmv")
     subb_exts = (".srt", ".sub", ".mpl")
 
     def __init__(self, movie_path, lang = "en"):
