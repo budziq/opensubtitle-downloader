@@ -5,7 +5,11 @@ import sys
 import os
 import base64
 import zlib
-from xmlrpc.client import ServerProxy, Error
+
+try:
+    from xmlrpc.client import ServerProxy, Error
+except ImportError:
+    from xmlrpclib import ServerProxy, Error
 
 class SubtitleDownload:
     '''Traverses a directory and all subdirectories and downloads subtitles.
