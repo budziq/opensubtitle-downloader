@@ -11,6 +11,24 @@ try:
 except ImportError:
     from xmlrpclib import ServerProxy, Error
 
+MOVIE_EXTS = (".avi", ".mkv", ".mp4", ".wmv")
+SUB_EXTS = (".srt", ".sub", ".mpl")
+
+def find_movies(movie_dir):
+    # Traverse the directory tree and select all movie files
+    movies = []
+    subtitles = set()
+
+    for root, _, files in os.walk(movie_dir):
+        for f in files:
+            name, ext = os.path.splitext(f)
+            if ext.lower() in SUB_EXTS:
+                subtitles.add(os.path.join(root, name))
+            if ext.lower() in MOVIE_EXTS:
+                movies.append(os.path.join(root, f))
+
+    return filter(lambda m : os.path.splitext(m)[0] not in subtitles, movies)
+
 class SubtitleDownload:
     '''Traverses a directory and all subdirectories and downloads subtitles.
 
@@ -22,29 +40,25 @@ class SubtitleDownload:
     login_token = None
     server = None
     moviefiles = []
-    movie_exts = (".avi", ".mkv", ".mp4", ".wmv")
-    subb_exts = (".srt", ".sub", ".mpl")
 
     def __init__(self, file_list, lang = "eng"):
         print("OpenSubtitles Subtitle Downloader".center(78))
         print("===================================".center(78))
+        if len(file_list) == 0 :
+            print "no files found"
+            return
+
         self.server = ServerProxy(self.api_url, verbose=False)
         self.lang_id = lang
 
-        # Traverse the directory tree and select all movie files
-        for root, _, files in os.walk(movie_path):
-            for file in files:
-                if self.is_movie(file):
-                    file_path = os.path.join(root, file)
-                    if not self.subtitles_already_present(file_path):
-                        print("Found: " + file)
-                        filehash = self.hashFile(file_path)
-                        filesize = os.path.getsize(file_path)
-                        self.moviefiles.append({'dir': root,
-                                                'file': file,
-                                                'hash': filehash,
-                                                'size': filesize,
-                                                'subtitleid': None})
+        for file_path in file_list:
+            print("Found: " + file_path)
+            filehash = self.hashFile(file_path)
+            filesize = os.path.getsize(file_path)
+            self.moviefiles.append({'file': file_path,
+                                    'hash': filehash,
+                                    'size': filesize,
+                                    'subtitleid': None})
 
         try:
             print("Login...")
@@ -59,6 +73,7 @@ class SubtitleDownload:
             print("XML-RPC error:", e)
         except UserWarning as uw:
             print(uw)
+
 
     def login(self):
         '''Log in to OpenSubtitles'''
@@ -109,7 +124,7 @@ class SubtitleDownload:
             for movie in self.moviefiles:
                 if movie['hash'] == ds['hash']:
                     print("Saving subtitle for: " + movie['file'])
-                    filename = os.path.join(movie['dir'], os.path.splitext(movie['file'])[0] + ".srt")
+                    filename = os.path.splitext(movie['file'])[0] + ".srt"
                     file = open(filename, "wb")
                     file.write(sub)
                     file.close()
@@ -120,16 +135,6 @@ class SubtitleDownload:
         decoded = base64.standard_b64decode(resp['data'][0]['data'].encode('ascii'))
         decompressed = zlib.decompress(decoded, 15 + 32)
         return decompressed
-
-    def is_movie(self, file):
-        return os.path.splitext(file.lower())[1] in self.movie_exts
-
-    def subtitles_already_present(self, file):
-        file_base = os.path.splitext(file.lower())[0]
-        for ext in self.subb_exts:
-            if os.path.exists(file_base + ext):
-                return True
-        return False
 
     def check_status(self, resp):
         '''Check the return status of the request.
@@ -183,5 +188,6 @@ if __name__ == '__main__':
         cwd = sys.argv[1]
     # in order to download non english subtitles add second argument
     # second language argument such as 'fre' or 'pol'
-    downloader = SubtitleDownload(cwd)
+    file_list = find_movies(cwd)
+    downloader = SubtitleDownload(file_list)
 
