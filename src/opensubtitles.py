@@ -25,7 +25,7 @@ class SubtitleDownload:
     movie_exts = (".avi", ".mkv", ".mp4", ".wmv")
     subb_exts = (".srt", ".sub", ".mpl")
 
-    def __init__(self, movie_path, lang = "en"):
+    def __init__(self, file_list, lang = "eng"):
         print("OpenSubtitles Subtitle Downloader".center(78))
         print("===================================".center(78))
         self.server = ServerProxy(self.api_url, verbose=False)
